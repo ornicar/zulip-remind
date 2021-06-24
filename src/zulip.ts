@@ -53,6 +53,7 @@ export const messageLoop = async (zulip: Zulip, handler: (msg: ZulipMsg) => Prom
   const q = await zulip.queues.register({ event_types: ['message'] });
   const me = await zulip.users.me.getProfile();
   let lastEventId = q.last_event_id;
+  console.log('Connected to zulip, awaiting commands');
   while (true) {
     const res = await zulip.events.retrieve({
       queue_id: q.queue_id,
