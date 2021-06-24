@@ -31,3 +31,11 @@ export const messageLoop = async (zulip: Zulip, handler: (msg: ZulipMsg) => Prom
     });
   }
 };
+
+export const reply = async (zulip: Zulip, to: ZulipMsg, text: string) =>
+  await zulip.messages.send({
+    to: to.stream_id,
+    type: 'stream',
+    topic: to.subject,
+    content: text,
+  });
