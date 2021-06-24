@@ -14,7 +14,9 @@ import { RedisStore } from './store';
       const command = parseCommand(msg.command, msg);
       switch (command.verb) {
         case 'list':
-          throw 'not implemented';
+          const all = await store.list();
+          all.forEach(async r => await reply(z, msg, printAdd(r)));
+          break;
         case 'add':
           console.log(printAdd(command));
           store.add(command);

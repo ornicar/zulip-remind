@@ -27,7 +27,7 @@ export const parseAdd = (cmd: string, orig: ZulipOrig): Add => {
   const withoutDateText = cmd.replace(dateText, '');
   const match = withoutDateText.match(/^(here|me)\s(?:to\s)?(.+)$/);
   const dest = match[1];
-  const what = match[2].replace(/\s?(at|in|on)\s?$/, '').trim();
+  const what = cleanWhat(cleanWhat(match[2]));
   return {
     verb: 'add',
     dest:
@@ -49,6 +49,12 @@ export const parseAdd = (cmd: string, orig: ZulipOrig): Add => {
 export const printAdd = (add: Add) =>
   `I will remind ${printDest(add.dest)} to “${add.what}” on ${dateFormat.format(add.when)}`;
 const printDest = (dest: ZulipDest) => (dest.type == 'stream' ? 'this stream' : 'you');
+
+const cleanWhat = (what: string) =>
+  what
+    .trim()
+    .replace(/\s?(at|in|on|to)\s?$/, '')
+    .replace(/^\s?(at|in|on|to)\s?/, '');
 
 const dateFormat = new Intl.DateTimeFormat('en', {
   year: 'numeric',
