@@ -13,20 +13,27 @@ export interface List {
   verb: 'list';
 }
 
-type Command = List | Remind;
+export interface Help {
+  verb: 'help';
+}
+
+type Command = Remind | List | Help;
 
 export const parseCommand = (cmd: string, orig: ZulipOrig): Command => {
   const verb = cmd.split(' ')[0];
   if (verb == 'list') return { verb };
+  if (verb == 'help' || verb == 'halp' || verb == 'h') return { verb: 'help' };
   else return parseRemind(cmd, orig);
 };
 
 export const parseRemind = (cmd: string, orig: ZulipOrig): Remind => {
-  const chronoed = chrono.parse(cmd)[0];
+  const chronoed = chrono.parse(cmd, new Date(), {
+    forwardDate: true,
+  })[0];
   const when = chronoed.date();
   const dateText = chronoed.text;
   const withoutDateText = cmd.replace(dateText, '');
-  const match = withoutDateText.match(/^(here|me)\s(?:to\s)?(.+)$/);
+  const match = withoutDateText.match(/^(here|stream|me)\s(?:to\s)?(.+)$/);
   const dest = match[1];
   const what = cleanWhat(cleanWhat(match[2]));
   return {

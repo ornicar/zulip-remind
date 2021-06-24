@@ -71,6 +71,11 @@ export const messageLoop = async (zulip: Zulip, handler: (msg: ZulipMsg) => Prom
   }
 };
 
+export const botName = async (zulip: Zulip): Promise<string> => {
+  const me = await zulip.users.me.getProfile();
+  return me.full_name;
+};
+
 const origToDest = (orig: ZulipOrig): ZulipDest => {
   return orig.type == 'stream'
     ? {

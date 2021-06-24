@@ -1,5 +1,5 @@
 import * as zulipInit from 'zulip-js';
-import { Zulip, ZulipMsg, messageLoop, reply, send, ZulipDestPrivate } from './zulip';
+import { Zulip, ZulipMsg, messageLoop, reply, send, ZulipDestPrivate, botName } from './zulip';
 import { Remind, parseCommand, printRemind } from './command';
 import { RedisStore, Store } from './store';
 
@@ -17,15 +17,14 @@ import { RedisStore, Store } from './store';
           break;
         case 'remind':
           await addReminder(msg, command);
+          break;
+        case 'help':
+          await help(msg);
+          break;
       }
     } catch {
-      await reply(z, msg, 'Sorry, I could not parse that.');
+      await reply(z, msg, 'Sorry, I could not parse that. Try the help command, maybe?');
     }
-  };
-
-  const remindNow = async (add: Remind) => {
-    console.log('Reminding now', add);
-    await send(z, add.dest, `Reminder: ${add.what}`);
   };
 
   const addReminder = async (msg: ZulipMsg, remind: Remind) => {
@@ -49,6 +48,32 @@ import { RedisStore, Store } from './store';
     const privateReminders = all.filter(r => r.dest.type == 'private' && r.from == msg.sender_id);
     if (privateReminders.length) privateReminders.forEach(async r => await send(z, pm, printRemind(r)));
     else await send(z, pm, 'None');
+  };
+
+  const help = async (msg: ZulipMsg) => {
+    const name = await botName(z);
+    const mention = `@${name}`;
+    await reply(
+      z,
+      msg,
+      [
+        'Use `' + mention + '` to set a reminder for yourself, or for a stream.',
+        'Some examples include:',
+        '- `' + mention + ' me on June 1st to wish Linda happy birthday`',
+        '- `' + mention + ' me to stop procrastinating tomorrow`',
+        '- `' + mention + ' here to update the project status in 3 hours`',
+        '- `' + mention + ' stream to party hard on 2021-09-27 at 10pm`',
+        '',
+        'Use `' + mention + ' list` to see the list of all your reminders.',
+        '',
+        'Use `' + mention + ' delete id` to delete a reminder by its ID',
+      ].join('\n')
+    );
+  };
+
+  const remindNow = async (add: Remind) => {
+    console.log('Reminding now', add);
+    await send(z, add.dest, `Reminder: ${add.what}`);
   };
 
   setInterval(async () => {
