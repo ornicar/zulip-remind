@@ -1,33 +1,41 @@
 import * as chrono from 'chrono-node';
 import { UserId, ZulipDest, ZulipOrig } from './zulip';
 
+export type RemindId = number;
+
 export interface Remind {
   verb: 'remind';
   what: string;
   dest: ZulipDest;
   when: Date;
   from: UserId;
-  id?: number; // auto-increment, set by the store
+  id?: RemindId; // auto-increment, set by the store
 }
 
 export interface List {
   verb: 'list';
 }
 
+export interface Delete {
+  verb: 'delete';
+  id: RemindId;
+}
+
 export interface Help {
   verb: 'help';
 }
 
-type Command = Remind | List | Help;
+type Command = Remind | List | Delete | Help;
 
 export const parseCommand = (cmd: string, orig: ZulipOrig): Command => {
   const verb = cmd.split(' ')[0];
   if (verb == 'list') return { verb };
   if (verb == 'help' || verb == 'halp' || verb == 'h') return { verb: 'help' };
+  if (verb == 'delete' || verb == 'del' || verb == 'remove') return parseDelete(cmd);
   else return parseRemind(cmd, orig);
 };
 
-export const parseRemind = (cmd: string, orig: ZulipOrig): Remind => {
+const parseRemind = (cmd: string, orig: ZulipOrig): Remind => {
   const chronoedAll = chrono.parse(cmd, new Date(), {
     forwardDate: true,
   });
@@ -58,8 +66,14 @@ export const parseRemind = (cmd: string, orig: ZulipOrig): Remind => {
   };
 };
 
+const parseDelete = (cmd: string): Delete => {
+  const id = parseInt(cmd.split(' ')[1]);
+  if (!id || id < 1) throw `Invalid delete id $id.`;
+  return { verb: 'delete', id };
+};
+
 export const printRemind = (remind: Remind) =>
-  `I will remind ${printDest(remind.dest)} \`${remind.what}\` on ${dateFormat.format(remind.when)}`;
+  `\`${remind.id}\` I will remind ${printDest(remind.dest)} \`${remind.what}\` on ${dateFormat.format(remind.when)}`;
 const printDest = (dest: ZulipDest) => (dest.type == 'stream' ? 'this stream' : 'you');
 
 const cleanWhat = (what: string) =>

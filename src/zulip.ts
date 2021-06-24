@@ -3,6 +3,7 @@ export interface Zulip {
   events: any;
   users: any;
   messages: any;
+  reactions: any;
 }
 
 export type UserId = number;
@@ -97,3 +98,9 @@ export const send = async (zulip: Zulip, dest: ZulipDest, text: string) => {
 };
 
 export const reply = async (zulip: Zulip, to: ZulipMsg, text: string) => await send(zulip, origToDest(to), text);
+
+export const react = async (zulip: Zulip, to: ZulipMsg, emoji: string) =>
+  await zulip.reactions.add({
+    message_id: to.id,
+    emoji_name: emoji,
+  });

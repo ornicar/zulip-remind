@@ -1,6 +1,6 @@
 import * as zulipInit from 'zulip-js';
-import { Zulip, ZulipMsg, messageLoop, reply, send, ZulipDestPrivate, botName } from './zulip';
-import { Remind, parseCommand, printRemind } from './command';
+import { Zulip, ZulipMsg, messageLoop, reply, send, react, ZulipDestPrivate, botName } from './zulip';
+import { Remind, parseCommand, printRemind, RemindId } from './command';
 import { RedisStore, Store } from './store';
 
 (async () => {
@@ -18,6 +18,9 @@ import { RedisStore, Store } from './store';
         case 'remind':
           await addReminder(msg, command);
           break;
+        case 'delete':
+          await deleteReminder(msg, command.id);
+          break;
         case 'help':
           await help(msg);
           break;
@@ -29,8 +32,8 @@ import { RedisStore, Store } from './store';
   };
 
   const addReminder = async (msg: ZulipMsg, remind: Remind) => {
+    remind.id = await store.add(remind);
     console.log(printRemind(remind));
-    store.add(remind);
     await reply(z, msg, printRemind(remind));
   };
 
@@ -44,11 +47,18 @@ import { RedisStore, Store } from './store';
       else await reply(z, msg, 'None');
     }
 
-    const pm: ZulipDestPrivate = { type: 'private', to: [msg.sender_id] };
-    await send(z, pm, 'Your private reminders:');
     const privateReminders = all.filter(r => r.dest.type == 'private' && r.from == msg.sender_id);
-    if (privateReminders.length) privateReminders.forEach(async r => await send(z, pm, printRemind(r)));
-    else await send(z, pm, 'None');
+    if (privateReminders.length || msg.type == 'private') {
+      const pm: ZulipDestPrivate = { type: 'private', to: [msg.sender_id] };
+      await send(z, pm, 'Your private reminders:');
+      if (privateReminders.length) privateReminders.forEach(async r => await send(z, pm, printRemind(r)));
+      else await send(z, pm, 'None');
+    }
+  };
+
+  const deleteReminder = async (msg: ZulipMsg, id: RemindId) => {
+    const done = await store.delete(id, msg.sender_id);
+    await react(z, msg, done ? 'check_mark' : 'cross_mark');
   };
 
   const help = async (msg: ZulipMsg) => {
