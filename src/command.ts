@@ -1,11 +1,12 @@
 import * as chrono from 'chrono-node';
-import { ZulipDest, ZulipOrig } from './zulip';
+import { UserId, ZulipDest, ZulipOrig } from './zulip';
 
 export interface Remind {
   verb: 'remind';
   what: string;
   dest: ZulipDest;
   when: Date;
+  from: UserId;
 }
 
 export interface List {
@@ -31,7 +32,7 @@ export const parseRemind = (cmd: string, orig: ZulipOrig): Remind => {
   return {
     verb: 'remind',
     dest:
-      dest == 'me'
+      dest == 'me' || orig.type == 'private'
         ? {
             type: 'private',
             to: [orig.sender_id],
@@ -43,18 +44,19 @@ export const parseRemind = (cmd: string, orig: ZulipOrig): Remind => {
           },
     what,
     when,
+    from: orig.sender_id,
   };
 };
 
 export const printRemind = (remind: Remind) =>
-  `I will remind ${printDest(remind.dest)} to “${remind.what}” on ${dateFormat.format(remind.when)}`;
+  `I will remind ${printDest(remind.dest)} “${remind.what}” on ${dateFormat.format(remind.when)}`;
 const printDest = (dest: ZulipDest) => (dest.type == 'stream' ? 'this stream' : 'you');
 
 const cleanWhat = (what: string) =>
   what
     .trim()
-    .replace(/\s?(at|in|on|to)\s?$/, '')
-    .replace(/^\s?(at|in|on|to)\s?/, '');
+    .replace(/\s(at|in|on|to)\s?$/, '')
+    .replace(/^\s?(at|in|on|to)\s/, '');
 
 const dateFormat = new Intl.DateTimeFormat('en', {
   year: 'numeric',

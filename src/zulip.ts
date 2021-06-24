@@ -1,5 +1,3 @@
-import { TextDecoder } from 'util';
-
 export interface Zulip {
   queues: any;
   events: any;
@@ -7,17 +5,35 @@ export interface Zulip {
   messages: any;
 }
 
-export interface ZulipOrig {
-  sender_id: number;
+export type UserId = number;
+
+export interface ZulipOrigStream {
+  type: 'stream';
+  sender_id: UserId;
   stream_id: number;
   subject: string;
 }
 
-export interface ZulipMsg extends ZulipOrig {
+export interface ZulipOrigPrivate {
+  type: 'private';
+  sender_id: UserId;
+  recipient_id: UserId;
+}
+
+export type ZulipOrig = ZulipOrigStream | ZulipOrigPrivate;
+
+export interface ZulipMsgStream extends ZulipOrigStream {
   id: number;
   content: string;
   command: string;
 }
+export interface ZulipMsgPrivate extends ZulipOrigPrivate {
+  id: number;
+  content: string;
+  command: string;
+}
+
+export type ZulipMsg = ZulipMsgStream | ZulipMsgPrivate;
 
 export interface ZulipDestStream {
   type: 'stream';
@@ -27,7 +43,7 @@ export interface ZulipDestStream {
 
 export interface ZulipDestPrivate {
   type: 'private';
-  to: [number];
+  to: [UserId];
 }
 
 export type ZulipDest = ZulipDestStream | ZulipDestPrivate;
@@ -45,20 +61,28 @@ export const messageLoop = async (zulip: Zulip, handler: (msg: ZulipMsg) => Prom
       lastEventId = event.id;
       if (event.type == 'heartbeat') console.log('Zulip heartbeat');
       else if (event.message) {
-        event.message.command = event.message.content.replace(`@**${me.full_name}**`, '').trim();
-        await handler(event.message as ZulipMsg);
+        // ignore own messages
+        if (event.message.sender_id != me.user_id) {
+          event.message.command = event.message.content.replace(`@**${me.full_name}**`, '').trim();
+          await handler(event.message as ZulipMsg);
+        }
       } else console.log(event);
     });
   }
 };
 
-export const reply = async (zulip: Zulip, to: ZulipMsg, text: string) =>
-  await zulip.messages.send({
-    to: to.stream_id,
-    type: 'stream',
-    topic: to.subject,
-    content: text,
-  });
+const origToDest = (orig: ZulipOrig): ZulipDest => {
+  return orig.type == 'stream'
+    ? {
+        type: 'stream',
+        to: orig.stream_id,
+        topic: orig.subject,
+      }
+    : {
+        type: 'private',
+        to: [orig.sender_id],
+      };
+};
 
 export const send = async (zulip: Zulip, dest: ZulipDest, text: string) => {
   await zulip.messages.send({
@@ -66,3 +90,5 @@ export const send = async (zulip: Zulip, dest: ZulipDest, text: string) => {
     content: text,
   });
 };
+
+export const reply = async (zulip: Zulip, to: ZulipMsg, text: string) => await send(zulip, origToDest(to), text);
