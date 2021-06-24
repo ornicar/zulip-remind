@@ -2,11 +2,14 @@ export interface Zulip {
   queues: any;
   events: any;
   users: any;
+  messages: any;
 }
 export interface ZulipMsg {
   id: number;
   content: string;
   command: string;
+  subject: string;
+  stream_id: number;
 }
 
 export const messageLoop = async (zulip: Zulip, handler: (msg: ZulipMsg) => Promise<void>) => {
