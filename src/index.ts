@@ -1,7 +1,7 @@
 /* import fetch from 'node-fetch'; */
 import * as zulipInit from 'zulip-js';
 import { Zulip, ZulipMsg, messageLoop, reply, send } from './zulip';
-import { Add, parseCommand, printAdd } from './command';
+import { Remind, parseCommand, printRemind } from './command';
 import { RedisStore } from './store';
 
 (async () => {
@@ -15,19 +15,19 @@ import { RedisStore } from './store';
       switch (command.verb) {
         case 'list':
           const all = await store.list();
-          all.forEach(async r => await reply(z, msg, printAdd(r)));
+          all.forEach(async r => await reply(z, msg, printRemind(r)));
           break;
-        case 'add':
-          console.log(printAdd(command));
+        case 'remind':
+          console.log(printRemind(command));
           store.add(command);
-          await reply(z, msg, printAdd(command));
+          await reply(z, msg, printRemind(command));
       }
     } catch {
       await reply(z, msg, 'Sorry, I could not parse that.');
     }
   };
 
-  const remindNow = async (add: Add) => {
+  const remindNow = async (add: Remind) => {
     console.log('Reminding now', add);
     await send(z, add.dest, `Reminder: ${add.what}`);
   };
