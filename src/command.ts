@@ -1,9 +1,10 @@
 import * as chrono from 'chrono-node';
+import { ZulipDest, ZulipOrig } from './zulip';
 
 export interface Add {
   verb: 'add';
-  dest: string;
   what: string;
+  dest: ZulipDest;
   when: Date;
 }
 
@@ -13,29 +14,41 @@ export interface List {
 
 type Command = List | Add;
 
-export const parseCommand = (cmd: string): Command => {
+export const parseCommand = (cmd: string, orig: ZulipOrig): Command => {
   const verb = cmd.split(' ')[0];
   if (verb == 'list') return { verb };
-  else return parseAdd(cmd);
+  else return parseAdd(cmd, orig);
 };
 
-export const parseAdd = (cmd: string): Add => {
+export const parseAdd = (cmd: string, orig: ZulipOrig): Add => {
   const chronoed = chrono.parse(cmd)[0];
   const when = chronoed.date();
   const dateText = chronoed.text;
   const withoutDateText = cmd.replace(dateText, '');
-  const match = withoutDateText.match(/^(here)\s(?:to\s)?(.+)$/);
+  const match = withoutDateText.match(/^(here|me)\s(?:to\s)?(.+)$/);
   const dest = match[1];
   const what = match[2].replace(/\s?(at|in|on)\s?$/, '').trim();
   return {
     verb: 'add',
-    dest,
+    dest:
+      dest == 'me'
+        ? {
+            type: 'private',
+            to: [orig.sender_id],
+          }
+        : {
+            type: 'stream',
+            to: orig.stream_id,
+            topic: orig.subject,
+          },
     what,
     when,
   };
 };
 
-export const printAdd = (add: Add) => `I will remind ${add.dest} to “${add.what}” on ${dateFormat.format(add.when)}`;
+export const printAdd = (add: Add) =>
+  `I will remind ${printDest(add.dest)} to “${add.what}” on ${dateFormat.format(add.when)}`;
+const printDest = (dest: ZulipDest) => (dest.type == 'stream' ? 'this stream' : 'you');
 
 const dateFormat = new Intl.DateTimeFormat('en', {
   year: 'numeric',

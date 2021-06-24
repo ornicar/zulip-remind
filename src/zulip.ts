@@ -1,16 +1,36 @@
+import { TextDecoder } from 'util';
+
 export interface Zulip {
   queues: any;
   events: any;
   users: any;
   messages: any;
 }
-export interface ZulipMsg {
+
+export interface ZulipOrig {
+  sender_id: number;
+  stream_id: number;
+  subject: string;
+}
+
+export interface ZulipMsg extends ZulipOrig {
   id: number;
   content: string;
   command: string;
-  subject: string;
-  stream_id: number;
 }
+
+export interface ZulipDestStream {
+  type: 'stream';
+  to: number;
+  topic: string;
+}
+
+export interface ZulipDestPrivate {
+  type: 'private';
+  to: [number];
+}
+
+export type ZulipDest = ZulipDestStream | ZulipDestPrivate;
 
 export const messageLoop = async (zulip: Zulip, handler: (msg: ZulipMsg) => Promise<void>) => {
   const q = await zulip.queues.register({ event_types: ['message'] });
@@ -39,3 +59,10 @@ export const reply = async (zulip: Zulip, to: ZulipMsg, text: string) =>
     topic: to.subject,
     content: text,
   });
+
+export const send = async (zulip: Zulip, dest: ZulipDest, text: string) => {
+  await zulip.messages.send({
+    ...dest,
+    content: text,
+  });
+};

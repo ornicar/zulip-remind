@@ -1,7 +1,7 @@
 /* import fetch from 'node-fetch'; */
 import * as zulipInit from 'zulip-js';
-import { Zulip, ZulipMsg, messageLoop, reply } from './zulip';
-import { parseCommand, printAdd } from './command';
+import { Zulip, ZulipMsg, messageLoop, reply, send } from './zulip';
+import { Add, parseCommand, printAdd } from './command';
 import { RedisStore } from './store';
 
 (async () => {
@@ -10,24 +10,30 @@ import { RedisStore } from './store';
 
   const messageHandler = async (msg: ZulipMsg) => {
     console.log(`Command: ${msg.command}`);
-    const command = parseCommand(msg.command);
-    switch (command.verb) {
-      case 'list':
-        throw 'not implemented';
-      case 'add':
-        console.log(printAdd(command));
-        store.add(command);
-        await reply(z, msg, printAdd(command));
+    try {
+      const command = parseCommand(msg.command, msg);
+      switch (command.verb) {
+        case 'list':
+          throw 'not implemented';
+        case 'add':
+          console.log(printAdd(command));
+          store.add(command);
+          await reply(z, msg, printAdd(command));
+      }
+    } catch {
+      await reply(z, msg, 'Sorry, I could not parse that.');
     }
-    return Promise.resolve();
   };
 
-  /*   await z.messages.send({ */
-  /*     to: 'bot', */
-  /*     type: 'stream', */
-  /*     subject: 'test', */
-  /*     content: 'test msg', */
-  /*   }); */
+  const remindNow = async (add: Add) => {
+    console.log('Reminding now', add);
+    await send(z, add.dest, `Reminder: ${add.what}`);
+  };
+
+  setInterval(async () => {
+    const add = await store.poll();
+    if (add) await remindNow(add);
+  }, 1000);
 
   await messageLoop(z, messageHandler);
 })();
