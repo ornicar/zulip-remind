@@ -27,9 +27,11 @@ export const parseCommand = (cmd: string, orig: ZulipOrig): Command => {
 };
 
 export const parseRemind = (cmd: string, orig: ZulipOrig): Remind => {
-  const chronoed = chrono.parse(cmd, new Date(), {
+  const chronoedAll = chrono.parse(cmd, new Date(), {
     forwardDate: true,
-  })[0];
+  });
+  if (chronoedAll[1]) console.log(`Found multiple dates in ${cmd}`, chronoedAll);
+  const chronoed = chronoedAll[0];
   const when = chronoed.date();
   const dateText = chronoed.text;
   const withoutDateText = cmd.replace(dateText, '');
@@ -56,7 +58,7 @@ export const parseRemind = (cmd: string, orig: ZulipOrig): Remind => {
 };
 
 export const printRemind = (remind: Remind) =>
-  `I will remind ${printDest(remind.dest)} “${remind.what}” on ${dateFormat.format(remind.when)}`;
+  `I will remind ${printDest(remind.dest)} \`${remind.what}\` on ${dateFormat.format(remind.when)}`;
 const printDest = (dest: ZulipDest) => (dest.type == 'stream' ? 'this stream' : 'you');
 
 const cleanWhat = (what: string) =>

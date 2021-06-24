@@ -22,7 +22,8 @@ import { RedisStore, Store } from './store';
           await help(msg);
           break;
       }
-    } catch {
+    } catch (err) {
+      console.log(err);
       await reply(z, msg, 'Sorry, I could not parse that. Try the help command, maybe?');
     }
   };
@@ -61,7 +62,7 @@ import { RedisStore, Store } from './store';
         'Some examples include:',
         '- `' + mention + ' me on June 1st to wish Linda happy birthday`',
         '- `' + mention + ' me to stop procrastinating tomorrow`',
-        '- `' + mention + ' here to update the project status in 3 hours`',
+        '- `' + mention + ' here in 3 hours to update the project status`',
         '- `' + mention + ' stream to party hard on 2021-09-27 at 10pm`',
         '',
         'Use `' + mention + ' list` to see the list of all your reminders.',
