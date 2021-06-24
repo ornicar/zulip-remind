@@ -6,7 +6,7 @@ Also see: https://github.com/apkallum/zulip-reminder-bot.
 
 I wanted a single service using redis, with support for fixed dates and public stream posting.
 
-## Built-in help command
+## Usage
 
 Use `@remind` to set a reminder for yourself, or for a stream.
 Some examples include:

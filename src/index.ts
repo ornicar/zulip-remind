@@ -34,7 +34,7 @@ import { RedisStore, Store } from './store';
   const addReminder = async (msg: ZulipMsg, remind: Remind) => {
     remind.id = await store.add(remind);
     console.log(printRemind(remind));
-    await reply(z, msg, printRemind(remind));
+    await reply(z, msg, `:check_mark: ${printRemind(remind)}`);
   };
 
   const listReminders = async (msg: ZulipMsg) => {
