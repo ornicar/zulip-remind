@@ -7,6 +7,7 @@ export interface Remind {
   dest: ZulipDest;
   when: Date;
   from: UserId;
+  id?: number; // auto-increment, set by the store
 }
 
 export interface List {
