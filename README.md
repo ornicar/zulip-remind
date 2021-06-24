@@ -35,12 +35,23 @@ yarn dev
 
 ## Production
 
+Build prod release:
+
 ```
 yarn build
-yarn start
 ```
 
-Or start it with `node dist/index.js`
+Deploy it to a server:
+
+```
+rsync -av zuliprc dist node_modules user@server:/home/zulip-remind/
+```
+
+Start it on the server:
+
+```
+node dist/index.js
+```
 
 ### Systemd service definition
 
