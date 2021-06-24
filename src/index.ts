@@ -2,9 +2,11 @@
 import * as zulipInit from 'zulip-js';
 import { Zulip, ZulipMsg, messageLoop, reply } from './zulip';
 import { parseCommand, printAdd } from './command';
+import { RedisStore } from './store';
 
 (async () => {
   const z: Zulip = await zulipInit.default({ zuliprc: 'zuliprc' });
+  const store = new RedisStore();
 
   const messageHandler = async (msg: ZulipMsg) => {
     console.log(`Command: ${msg.command}`);
@@ -14,7 +16,7 @@ import { parseCommand, printAdd } from './command';
         throw 'not implemented';
       case 'add':
         console.log(printAdd(command));
-        /* store.insert(command); */
+        store.add(command);
         await reply(z, msg, printAdd(command));
     }
     return Promise.resolve();
