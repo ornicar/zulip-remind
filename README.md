@@ -11,10 +11,10 @@ I wanted a single service using redis, with support for fixed dates and public s
 Use `@remind` to set a reminder for yourself, or for a stream.
 Some examples include:
 
-- `@remind` me on June 1st to wish Linda happy birthday
-- `@remind` me to stop procrastinating tomorrow
-- `@remind` here in 3 hours to update the project status
-- `@remind` stream to party hard on 2021-09-27 at 10pm
+- `@remind me on June 1st to wish Linda happy birthday`
+- `@remind me to stop procrastinating tomorrow`
+- `@remind here in 3 hours to update the project status`
+- `@remind stream to party hard on 2021-09-27 at 10pm`
 
 Use `@remind list` to see the list of all your reminders.
 
@@ -33,9 +33,11 @@ yarn install
 yarn dev
 ```
 
+And you're set, try using it from your Zulip instance.
+
 ## Production
 
-Build prod release:
+Build a prod release:
 
 ```
 yarn build
