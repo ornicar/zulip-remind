@@ -2,11 +2,11 @@
 import * as zulipInit from 'zulip-js';
 import { Zulip, ZulipMsg, messageLoop, reply, send } from './zulip';
 import { Remind, parseCommand, printRemind } from './command';
-import { RedisStore } from './store';
+import { RedisStore, Store } from './store';
 
 (async () => {
   const z: Zulip = await zulipInit.default({ zuliprc: 'zuliprc' });
-  const store = new RedisStore();
+  const store: Store = new RedisStore();
 
   const messageHandler = async (msg: ZulipMsg) => {
     console.log(`Command: ${msg.command}`);

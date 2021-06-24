@@ -4,9 +4,10 @@ import { Remind } from './command';
 export interface Store {
   add: (remind: Remind) => Promise<void>;
   list: () => Promise<Remind[]>;
-  poll: () => Promise<Remind | undefined>;
+  poll: () => Promise<Remind | undefined>; // deletes the Remind it returns
 }
 
+// Just one possible implementation.
 export class RedisStore implements Store {
   private client = createNodeRedisClient();
   private key = 'zulip-remind';
