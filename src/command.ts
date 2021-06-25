@@ -38,17 +38,9 @@ export const parseCommand = async (cmd: string, orig: ZulipOrig, getTimezone: Ge
 };
 
 const parseRemind = async (cmd: string, orig: ZulipOrig, getTimezone: GetTimezone): Promise<Remind> => {
-  const timezone = await getTimezone(orig.sender_id);
-  const chronoedAll = chrono.parse(
-    cmd,
-    {
-      instant: new Date(),
-      timezone,
-    },
-    {
-      forwardDate: true,
-    }
-  );
+  const chronoedAll = chrono.parse(cmd, undefined, {
+    forwardDate: true,
+  });
   if (chronoedAll[1]) console.log(`Found multiple dates in ${cmd}`, chronoedAll);
   const chronoed = chronoedAll[0];
   const when = chronoed.date();
@@ -57,6 +49,7 @@ const parseRemind = async (cmd: string, orig: ZulipOrig, getTimezone: GetTimezon
   const match = withoutDateText.match(/^(here|stream|me)\s(?:to\s)?(.+)$/);
   const dest = match[1];
   const what = cleanWhat(cleanWhat(match[2]));
+  const zone = await getTimezone(orig.sender_id);
   return {
     verb: 'remind',
     dest:
@@ -72,7 +65,7 @@ const parseRemind = async (cmd: string, orig: ZulipOrig, getTimezone: GetTimezon
           },
     what,
     when,
-    zone: timezone,
+    zone,
     from: orig.sender_id,
   };
 };

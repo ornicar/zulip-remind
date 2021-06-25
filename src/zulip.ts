@@ -56,7 +56,7 @@ export const messageLoop = async (zulip: Zulip, handler: (msg: ZulipMsg) => Prom
   const q = await zulip.queues.register({ event_types: ['message'] });
   const me = await zulip.users.me.getProfile();
   let lastEventId = q.last_event_id;
-  console.log('Connected to zulip, awaiting commands');
+  console.log(`Connected to zulip as @${me.full_name}, awaiting commands`);
   while (true) {
     const res = await zulip.events.retrieve({
       queue_id: q.queue_id,
@@ -82,12 +82,10 @@ export const botName = async (zulip: Zulip): Promise<string> => {
   return me.full_name;
 };
 
-export const userTimezone =
-  (zulip: Zulip) =>
-  async (userId: UserId): Promise<string> => {
-    const res = await zulip.callEndpoint(`/users/${userId}`, 'GET', {});
-    return res.user.timezone;
-  };
+export const userTimezone = (zulip: Zulip) => async (userId: UserId): Promise<string> => {
+  const res = await zulip.callEndpoint(`/users/${userId}`, 'GET', {});
+  return res.user.timezone;
+};
 
 const origToDest = (orig: ZulipOrig): ZulipDest => {
   return orig.type == 'stream'

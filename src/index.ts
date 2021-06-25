@@ -94,8 +94,5 @@ import * as chrono from 'chrono-node';
     if (add) await remindNow(add);
   }, 1000);
 
-  /* console.log(chrono.parse('11am')[0].date()); */
-  /* console.log(chrono.parse('11am', { timezone: 'Europe/Rome' })[0].date()); */
-
   await messageLoop(z, messageHandler);
 })();
