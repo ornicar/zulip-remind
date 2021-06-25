@@ -2,14 +2,12 @@ import * as zulipInit from 'zulip-js';
 import { Zulip, ZulipMsg, messageLoop, reply, send, react, ZulipDestPrivate, botName, userTimezone } from './zulip';
 import { Remind, parseCommand, printRemind, RemindId } from './command';
 import { RedisStore, Store } from './store';
-import * as chrono from 'chrono-node';
 
 (async () => {
   const z: Zulip = await zulipInit.default({ zuliprc: 'zuliprc' });
   const store: Store = new RedisStore();
 
   const messageHandler = async (msg: ZulipMsg) => {
-    console.log(msg);
     console.log(`Command: ${msg.command}`);
     try {
       const command = await parseCommand(msg.command, msg, userTimezone(z));

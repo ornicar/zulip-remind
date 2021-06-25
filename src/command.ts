@@ -1,5 +1,6 @@
 import * as chrono from 'chrono-node';
 import { GetTimezone, UserId, ZulipDest, ZulipOrig } from './zulip';
+import { findTimeZone, getUTCOffset } from 'timezone-support';
 
 export type RemindId = number;
 export type Timezone = string;
@@ -38,9 +39,17 @@ export const parseCommand = async (cmd: string, orig: ZulipOrig, getTimezone: Ge
 };
 
 const parseRemind = async (cmd: string, orig: ZulipOrig, getTimezone: GetTimezone): Promise<Remind> => {
-  const chronoedAll = chrono.parse(cmd, undefined, {
-    forwardDate: true,
-  });
+  const timezone = await getTimezone(orig.sender_id);
+  const chronoedAll = chrono.parse(
+    cmd,
+    {
+      instant: new Date(),
+      timezone: getUTCOffset(new Date(), findTimeZone(timezone)).abbreviation,
+    },
+    {
+      forwardDate: true,
+    }
+  );
   if (chronoedAll[1]) console.log(`Found multiple dates in ${cmd}`, chronoedAll);
   const chronoed = chronoedAll[0];
   const when = chronoed.date();
@@ -49,7 +58,6 @@ const parseRemind = async (cmd: string, orig: ZulipOrig, getTimezone: GetTimezon
   const match = withoutDateText.match(/^(here|stream|me)\s(?:to\s)?(.+)$/);
   const dest = match[1];
   const what = cleanWhat(cleanWhat(match[2]));
-  const zone = await getTimezone(orig.sender_id);
   return {
     verb: 'remind',
     dest:
@@ -65,7 +73,7 @@ const parseRemind = async (cmd: string, orig: ZulipOrig, getTimezone: GetTimezon
           },
     what,
     when,
-    zone,
+    zone: timezone,
     from: orig.sender_id,
   };
 };
