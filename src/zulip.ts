@@ -4,6 +4,7 @@ export interface Zulip {
   users: any;
   messages: any;
   reactions: any;
+  callEndpoint: (path: string, method: 'GET' | 'POST', params: any) => Promise<any>;
 }
 
 export type UserId = number;
@@ -49,6 +50,8 @@ export interface ZulipDestPrivate {
 
 export type ZulipDest = ZulipDestStream | ZulipDestPrivate;
 
+export type GetTimezone = (userId: UserId) => Promise<string>;
+
 export const messageLoop = async (zulip: Zulip, handler: (msg: ZulipMsg) => Promise<void>) => {
   const q = await zulip.queues.register({ event_types: ['message'] });
   const me = await zulip.users.me.getProfile();
@@ -61,8 +64,9 @@ export const messageLoop = async (zulip: Zulip, handler: (msg: ZulipMsg) => Prom
     });
     res.events.forEach(async (event: any) => {
       lastEventId = event.id;
-      if (event.type == 'heartbeat') console.log('Zulip heartbeat');
-      else if (event.message) {
+      if (event.type == 'heartbeat') {
+        //console.log('Zulip heartbeat');
+      } else if (event.message) {
         // ignore own messages
         if (event.message.sender_id != me.user_id) {
           event.message.command = event.message.content.replace(`@**${me.full_name}**`, '').trim();
@@ -77,6 +81,13 @@ export const botName = async (zulip: Zulip): Promise<string> => {
   const me = await zulip.users.me.getProfile();
   return me.full_name;
 };
+
+export const userTimezone =
+  (zulip: Zulip) =>
+  async (userId: UserId): Promise<string> => {
+    const res = await zulip.callEndpoint(`/users/${userId}`, 'GET', {});
+    return res.user.timezone;
+  };
 
 const origToDest = (orig: ZulipOrig): ZulipDest => {
   return orig.type == 'stream'

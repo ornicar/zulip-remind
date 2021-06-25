@@ -1,16 +1,18 @@
 import * as zulipInit from 'zulip-js';
-import { Zulip, ZulipMsg, messageLoop, reply, send, react, ZulipDestPrivate, botName } from './zulip';
+import { Zulip, ZulipMsg, messageLoop, reply, send, react, ZulipDestPrivate, botName, userTimezone } from './zulip';
 import { Remind, parseCommand, printRemind, RemindId } from './command';
 import { RedisStore, Store } from './store';
+import * as chrono from 'chrono-node';
 
 (async () => {
   const z: Zulip = await zulipInit.default({ zuliprc: 'zuliprc' });
   const store: Store = new RedisStore();
 
   const messageHandler = async (msg: ZulipMsg) => {
+    console.log(msg);
     console.log(`Command: ${msg.command}`);
     try {
-      const command = parseCommand(msg.command, msg);
+      const command = await parseCommand(msg.command, msg, userTimezone(z));
       switch (command.verb) {
         case 'list':
           await listReminders(msg);
@@ -27,7 +29,7 @@ import { RedisStore, Store } from './store';
       }
     } catch (err) {
       console.log(err);
-      await reply(z, msg, 'Sorry, I could not parse that. Try the help command, maybe?');
+      /* await reply(z, msg, 'Sorry, I could not parse that. Try the help command, maybe?'); */
     }
   };
 
@@ -91,6 +93,9 @@ import { RedisStore, Store } from './store';
     const add = await store.poll();
     if (add) await remindNow(add);
   }, 1000);
+
+  /* console.log(chrono.parse('11am')[0].date()); */
+  /* console.log(chrono.parse('11am', { timezone: 'Europe/Rome' })[0].date()); */
 
   await messageLoop(z, messageHandler);
 })();

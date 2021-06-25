@@ -1,7 +1,8 @@
 import * as chrono from 'chrono-node';
-import { UserId, ZulipDest, ZulipOrig } from './zulip';
+import { GetTimezone, UserId, ZulipDest, ZulipOrig } from './zulip';
 
 export type RemindId = number;
+export type Timezone = string;
 
 export interface Remind {
   verb: 'remind';
@@ -9,6 +10,7 @@ export interface Remind {
   dest: ZulipDest;
   when: Date;
   from: UserId;
+  zone: Timezone;
   id?: RemindId; // auto-increment, set by the store
 }
 
@@ -27,18 +29,26 @@ export interface Help {
 
 type Command = Remind | List | Delete | Help;
 
-export const parseCommand = (cmd: string, orig: ZulipOrig): Command => {
+export const parseCommand = async (cmd: string, orig: ZulipOrig, getTimezone: GetTimezone): Promise<Command> => {
   const verb = cmd.split(' ')[0];
   if (verb == 'list') return { verb };
   if (verb == 'help' || verb == 'halp' || verb == 'h') return { verb: 'help' };
   if (verb == 'delete' || verb == 'del' || verb == 'remove') return parseDelete(cmd);
-  else return parseRemind(cmd, orig);
+  else return await parseRemind(cmd, orig, getTimezone);
 };
 
-const parseRemind = (cmd: string, orig: ZulipOrig): Remind => {
-  const chronoedAll = chrono.parse(cmd, new Date(), {
-    forwardDate: true,
-  });
+const parseRemind = async (cmd: string, orig: ZulipOrig, getTimezone: GetTimezone): Promise<Remind> => {
+  const timezone = await getTimezone(orig.sender_id);
+  const chronoedAll = chrono.parse(
+    cmd,
+    {
+      instant: new Date(),
+      timezone,
+    },
+    {
+      forwardDate: true,
+    }
+  );
   if (chronoedAll[1]) console.log(`Found multiple dates in ${cmd}`, chronoedAll);
   const chronoed = chronoedAll[0];
   const when = chronoed.date();
@@ -62,6 +72,7 @@ const parseRemind = (cmd: string, orig: ZulipOrig): Remind => {
           },
     what,
     when,
+    zone: timezone,
     from: orig.sender_id,
   };
 };
@@ -73,7 +84,10 @@ const parseDelete = (cmd: string): Delete => {
 };
 
 export const printRemind = (remind: Remind) =>
-  `\`${remind.id}\` I will remind ${printDest(remind.dest)} \`${remind.what}\` on ${dateFormat.format(remind.when)}`;
+  `\`${remind.id}\` I will remind ${printDest(remind.dest)} \`${remind.what}\` on ${printDate(
+    remind.when,
+    remind.zone
+  )}`;
 const printDest = (dest: ZulipDest) => (dest.type == 'stream' ? 'this stream' : 'you');
 
 const cleanWhat = (what: string) =>
@@ -82,10 +96,15 @@ const cleanWhat = (what: string) =>
     .replace(/\s(at|in|on|to)\s?$/, '')
     .replace(/^\s?(at|in|on|to)\s/, '');
 
-const dateFormat = new Intl.DateTimeFormat('en', {
-  year: 'numeric',
-  month: 'short',
-  day: 'numeric',
-  hour: 'numeric',
-  minute: 'numeric',
-});
+const printDate = (date: Date, timezone: Timezone): string => {
+  const formatter = new Intl.DateTimeFormat('en', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    timeZone: timezone,
+    timeZoneName: 'long',
+  });
+  return formatter.format(date);
+};
