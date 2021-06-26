@@ -3,7 +3,6 @@ import { GetTimezone, UserId, ZulipDest, ZulipOrig } from './zulip';
 import { findTimeZone, getUTCOffset } from 'timezone-support';
 
 export type RemindId = number;
-export type Timezone = string;
 
 export interface Remind {
   verb: 'remind';
@@ -11,7 +10,6 @@ export interface Remind {
   dest: ZulipDest;
   when: Date;
   from: UserId;
-  zone: Timezone;
   id?: RemindId; // auto-increment, set by the store
 }
 
@@ -73,7 +71,6 @@ const parseRemind = async (cmd: string, orig: ZulipOrig, getTimezone: GetTimezon
           },
     what,
     when,
-    zone: timezone,
     from: orig.sender_id,
   };
 };
@@ -85,10 +82,7 @@ const parseDelete = (cmd: string): Delete => {
 };
 
 export const printRemind = (remind: Remind) =>
-  `\`${remind.id}\` I will remind ${printDest(remind.dest)} \`${remind.what}\` on ${printDate(
-    remind.when,
-    remind.zone
-  )}`;
+  `\`${remind.id}\` I will remind ${printDest(remind.dest)} \`${remind.what}\` on ${printDate(remind.when)}`;
 const printDest = (dest: ZulipDest) => (dest.type == 'stream' ? 'this stream' : 'you');
 
 const cleanWhat = (what: string) =>
@@ -97,15 +91,4 @@ const cleanWhat = (what: string) =>
     .replace(/\s(at|in|on|to)\s?$/, '')
     .replace(/^\s?(at|in|on|to)\s/, '');
 
-const printDate = (date: Date, timezone: Timezone): string => {
-  const formatter = new Intl.DateTimeFormat('en', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: 'numeric',
-    timeZone: timezone,
-    timeZoneName: 'long',
-  });
-  return formatter.format(date);
-};
+const printDate = (date: Date): string => `<time:${date.toISOString()}>`;
