@@ -27,6 +27,7 @@ import { RedisStore, Store } from './store';
       }
     } catch (err) {
       console.log(err);
+      await react(z, msg, 'cross_mark');
       /* await reply(z, msg, 'Sorry, I could not parse that. Try the help command, maybe?'); */
     }
   };
