@@ -6,7 +6,7 @@ export interface Store {
   add: (remind: Remind) => Promise<number>; // sets and returns a unique id field
   list: () => Promise<Remind[]>;
   poll: () => Promise<Remind | undefined>; // deletes the Remind it returns
-  delete: (id: RemindId, by: UserId) => Promise<boolean>;
+  delete: (id: RemindId, by: UserId) => Promise<Remind | undefined>;
 }
 
 // Just one possible implementation.
@@ -53,7 +53,7 @@ export class RedisStore implements Store {
       return remind.id == id && remind.from == by;
     });
     if (entry) await this.client.zrem(this.setKey, entry);
-    return !!entry;
+    return entry && this.read(entry);
   };
 
   private read = (entry: string): Remind => {

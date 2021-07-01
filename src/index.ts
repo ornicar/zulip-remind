@@ -58,8 +58,9 @@ import { RedisStore, Store } from './store';
   };
 
   const deleteReminder = async (msg: ZulipMsg, id: RemindId) => {
-    const done = await store.delete(id, msg.sender_id);
-    await react(z, msg, done ? 'check_mark' : 'cross_mark');
+    const entry = await store.delete(id, msg.sender_id);
+    if (entry) await reply(z, msg, `:check_mark: Deleted: ${printRemind(entry)}`);
+    else await react(z, msg, 'cross_mark');
   };
 
   const help = async (msg: ZulipMsg) => {
