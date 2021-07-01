@@ -41,19 +41,20 @@ import { RedisStore, Store } from './store';
   const listReminders = async (msg: ZulipMsg) => {
     const all = await store.list();
 
+    const print = (rs: Remind[]) => (rs.length ? rs.map(printRemind) : ['None']);
+
     if (msg.type == 'stream') {
-      await reply(z, msg, 'Public reminders in this stream:');
-      const publicReminders = all.filter(r => r.dest.type == 'stream' && r.dest.to == msg.stream_id);
-      if (publicReminders.length) publicReminders.forEach(async r => await reply(z, msg, printRemind(r)));
-      else await reply(z, msg, 'None');
+      const text = [
+        'Public reminders in this stream:',
+        ...print(all.filter(r => r.dest.type == 'stream' && r.dest.to == msg.stream_id)),
+      ].join('\n');
+      await reply(z, msg, text);
     }
 
     const privateReminders = all.filter(r => r.dest.type == 'private' && r.from == msg.sender_id);
     if (privateReminders.length || msg.type == 'private') {
-      const pm: ZulipDestPrivate = { type: 'private', to: [msg.sender_id] };
-      await send(z, pm, 'Your private reminders:');
-      if (privateReminders.length) privateReminders.forEach(async r => await send(z, pm, printRemind(r)));
-      else await send(z, pm, 'None');
+      const text = ['Your private reminders:', ...print(privateReminders)].join('\n');
+      await send(z, { type: 'private', to: [msg.sender_id] }, text);
     }
   };
 
