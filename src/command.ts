@@ -82,8 +82,9 @@ const parseDelete = (cmd: string): Delete => {
 };
 
 export const printRemind = (remind: Remind) =>
-  `\`${remind.id}\` I will remind ${printDest(remind.dest)} \`${remind.what}\` on ${printDate(remind.when)}`;
-const printDest = (dest: ZulipDest) => (dest.type == 'stream' ? 'this stream' : 'you');
+  `\`${remind.id}\` I will remind ${printDest(remind.dest)} to \`${remind.what}\` on ${printDate(remind.when)}`;
+
+const printDest = (dest: ZulipDest) => (dest.type == 'stream' ? `\`${dest.topic}\`` : 'you');
 
 const cleanWhat = (what: string) =>
   what
