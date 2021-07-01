@@ -11,7 +11,10 @@ export interface Store {
 
 // Just one possible implementation.
 export class RedisStore implements Store {
-  private client = createNodeRedisClient();
+  private client = createNodeRedisClient({
+    port: parseInt(process.env.REDIS_PORT),
+    password: process.env.REDIS_PASSWORD,
+  });
   private prefix = 'zulip-remind';
   private setKey = `${this.prefix}-set`;
   private incKey = `${this.prefix}-key`;

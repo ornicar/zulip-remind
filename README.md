@@ -66,6 +66,8 @@ After=network.target
 User=root
 Group=root
 WorkingDirectory=/home/zulip-remind
+Environment="REDIS_PASSWORD="
+Environment="REDIS_PORT=6379"
 ExecStart=/usr/bin/node dist/index.js
 Restart=always
 
