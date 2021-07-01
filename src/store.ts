@@ -27,7 +27,7 @@ export class RedisStore implements Store {
 
   list = async () => {
     const entries = await this.client.zrange(this.setKey, 0, -1);
-    return entries.map(this.read);
+    return entries.map(this.read).sort((a, b) => a.id - b.id);
   };
 
   poll = async () => {
