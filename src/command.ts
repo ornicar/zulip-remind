@@ -1,6 +1,7 @@
 import * as chrono from 'chrono-node';
-import { GetTimezone, UserId, ZulipDest, ZulipOrig } from './zulip';
+import { GetTimezone, printDest, UserId, ZulipDest, ZulipOrig } from './zulip';
 import { findTimeZone, getUTCOffset } from 'timezone-support';
+import { printDate } from './util';
 
 export type RemindId = number;
 
@@ -84,12 +85,8 @@ const parseDelete = (cmd: string): Delete => {
 export const printRemind = (remind: Remind) =>
   `\`${remind.id}\` I will remind ${printDest(remind.dest)} to \`${remind.what}\` on ${printDate(remind.when)}`;
 
-const printDest = (dest: ZulipDest) => (dest.type == 'stream' ? `\`${dest.topic}\`` : 'you');
-
 const cleanWhat = (what: string) =>
   what
     .trim()
     .replace(/\s(at|in|on|to)\s?$/, '')
     .replace(/^\s?(at|in|on|to)\s/, '');
-
-const printDate = (date: Date): string => `<time:${date.toISOString()}>`;

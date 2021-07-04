@@ -1,7 +1,19 @@
 import * as zulipInit from 'zulip-js';
-import { Zulip, ZulipMsg, messageLoop, reply, send, react, ZulipDestPrivate, botName, userTimezone } from './zulip';
+import {
+  Zulip,
+  ZulipMsg,
+  messageLoop,
+  reply,
+  send,
+  react,
+  ZulipDestPrivate,
+  botName,
+  userTimezone,
+  printDest,
+} from './zulip';
 import { Remind, parseCommand, printRemind, RemindId } from './command';
 import { RedisStore, Store } from './store';
+import { markdownTable, printDate } from './util';
 
 (async () => {
   const z: Zulip = await zulipInit.default({ zuliprc: 'zuliprc' });
@@ -41,20 +53,27 @@ import { RedisStore, Store } from './store';
   const listReminders = async (msg: ZulipMsg) => {
     const all = await store.list();
 
-    const print = (rs: Remind[]) => (rs.length ? rs.map(printRemind) : ['None']);
+    const printTable = (title: string, rs: Remind[]) =>
+      rs.length
+        ? markdownTable([
+            ['ID', 'Date', title, 'Topic'],
+            ...rs.map(r => ['' + r.id, printDate(r.when), r.what, printDest(r.dest)]),
+          ])
+        : 'No upcoming reminders here.';
 
-    if (msg.type == 'stream') {
-      const text = [
-        'Public reminders in this stream:',
-        ...print(all.filter(r => r.dest.type == 'stream' && r.dest.to == msg.stream_id)),
-      ].join('\n');
-      await reply(z, msg, text);
-    }
+    if (msg.type == 'stream')
+      await reply(
+        z,
+        msg,
+        printTable(
+          'Public reminders in this stream',
+          all.filter(r => r.dest.type == 'stream' && r.dest.to == msg.stream_id)
+        )
+      );
 
     const privateReminders = all.filter(r => r.dest.type == 'private' && r.from == msg.sender_id);
     if (privateReminders.length || msg.type == 'private') {
-      const text = ['Your private reminders:', ...print(privateReminders)].join('\n');
-      await send(z, { type: 'private', to: [msg.sender_id] }, text);
+      await send(z, { type: 'private', to: [msg.sender_id] }, printTable('Your private reminders', privateReminders));
     }
   };
 

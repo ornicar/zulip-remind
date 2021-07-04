@@ -123,3 +123,5 @@ export const react = async (zulip: Zulip, to: ZulipMsg, emoji: string) =>
     message_id: to.id,
     emoji_name: emoji,
   });
+
+export const printDest = (dest: ZulipDest) => (dest.type == 'stream' ? `\`${dest.topic}\`` : 'you');
