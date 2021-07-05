@@ -14,6 +14,7 @@ export class RedisStore implements Store {
   private client = createNodeRedisClient({
     port: parseInt(process.env.REDIS_PORT),
     password: process.env.REDIS_PASSWORD,
+    db: process.env.REDIS_DB,
   });
   private prefix = 'zulip-remind';
   private setKey = `${this.prefix}-set`;
