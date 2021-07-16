@@ -22,6 +22,7 @@ Use `@remind delete` id to delete a reminder by its ID
 
 ## Setup
 
+### Manual
 In Zulip, go to Settings -> Your bots, and add a new bot.
 
 You may name it `remind` as I did, or anything else you like.
@@ -35,6 +36,21 @@ yarn dev
 
 And you're set, try using it from your Zulip instance.
 
+### Docker
+You can easily start the docker container with: 
+```
+docker-compose up -d
+```
+Then a Redis database will start and the reminder automatically connects to it.
+
+Please provide the `zuliprc` file and put it at the root of this project.
+
+As host you need to provide the IP address of the computer the docker-compose is running on as REDIS_HOST.
+You also need to set the REDIS_PASSWORD for the container to work.
+The port is optional, if not set the standard port 6379 will be taken.
+
+To set these variables mentioned above please copy the .env.example file and paste it as .env file and populate its fields.
+
 ## Redis configuration
 
 To set a redis port, password, or database, use these environment variables:
@@ -43,12 +59,13 @@ To set a redis port, password, or database, use these environment variables:
 REDIS_PORT
 REDIS_PASSWORD
 REDIS_DB
+REDIS_HOST
 ```
 
 Example:
 
 ```
-REDIS_PORT=9379 REDIS_DB=5 yarn dev
+REDIS_PORT=9379 REDIS_DB=5 REDIS_HOST=127.0.0.1 yarn dev
 ```
 
 ## Production
