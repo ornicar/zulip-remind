@@ -1,0 +1,29 @@
+version: "3.7"
+
+services:
+  redis-db:
+    image: redis:alpine
+    container_name: reminder-db
+    restart: unless-stopped
+    command:
+      - 'sh'
+      - '-euc'
+      - |
+        exec redis-server --requirepass ${REDIS_PASSWORD}
+    volumes: 
+      - ${REMINDER_DATA}/:/data:rw
+    ports: 
+      - ${REDIS_PORT}:6379
+
+  reminder-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args: 
+        - REDIS_PORT=${REDIS_PORT}
+        - REDIS_HOST=${REDIS_HOST}
+        - REDIS_PASSWORD=${REDIS_PASSWORD}
+    container_name: reminder-bot
+    restart: unless-stopped
+    depends_on: 
+      - redis-db
