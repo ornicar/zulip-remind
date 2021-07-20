@@ -11,7 +11,7 @@ services:
       - |
         exec redis-server --requirepass ${REDIS_PASSWORD}
     volumes: 
-      - ${REMINDER_DATA}/:/data:rw
+      - ${DOCKER_REDIS_VOLUME}/:/data:rw
     ports: 
       - ${REDIS_PORT}:6379
 
