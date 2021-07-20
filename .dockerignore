@@ -1,0 +1,8 @@
+**
+
+!./entrypoint.sh
+!./package.json
+!./src/*
+!./tsconfig.json
+!./yarn.lock
+!./zuliprc
