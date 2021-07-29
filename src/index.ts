@@ -1,16 +1,5 @@
 import * as zulipInit from 'zulip-js';
-import {
-  Zulip,
-  ZulipMsg,
-  messageLoop,
-  reply,
-  send,
-  react,
-  ZulipDestPrivate,
-  botName,
-  userTimezone,
-  printDest,
-} from './zulip';
+import { Zulip, ZulipMsg, messageLoop, reply, send, react, botName, userTimezone, printDest } from './zulip';
 import { Remind, parseCommand, printRemind, RemindId } from './command';
 import { RedisStore, Store } from './store';
 import { markdownTable, printDate } from './util';
@@ -38,7 +27,7 @@ import { markdownTable, printDate } from './util';
           break;
       }
     } catch (err) {
-      console.log(err);
+      console.error(err);
       await react(z, msg, 'cross_mark');
       /* await reply(z, msg, 'Sorry, I could not parse that. Try the help command, maybe?'); */
     }
