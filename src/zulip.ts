@@ -94,12 +94,10 @@ export const botName = async (zulip: Zulip): Promise<string> => {
   return me.full_name;
 };
 
-export const userTimezone =
-  (zulip: Zulip) =>
-  async (userId: UserId): Promise<string> => {
-    const res = await zulip.callEndpoint(`/users/${userId}`, 'GET', {});
-    return res.user.timezone;
-  };
+export const userTimezone = (zulip: Zulip) => async (userId: UserId): Promise<string> => {
+  const res = await zulip.callEndpoint(`/users/${userId}`, 'GET', {});
+  return res.user.timezone;
+};
 
 const origToDest = (orig: ZulipOrig): ZulipDest => {
   return orig.type == 'stream'
