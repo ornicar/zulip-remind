@@ -73,8 +73,12 @@ export const messageLoop = async (zulip: Zulip, handler: (msg: ZulipMsg) => Prom
         } else if (event.message) {
           // ignore own messages
           if (event.message.sender_id != me.user_id) {
-            event.message.command = event.message.content.replace(`@**${me.full_name}**`, '').trim();
-            await handler(event.message as ZulipMsg);
+            const parts = event.message.content.trim().split(' ');
+            // require explicit ping
+            if (parts[0] == `@**${me.full_name}**`) {
+              event.message.command = parts.slice(1).join(' ');
+              await handler(event.message as ZulipMsg);
+            }
           }
         } else console.log(event);
       });
