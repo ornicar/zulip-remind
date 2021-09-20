@@ -21,6 +21,7 @@ export interface List {
 export interface Delete {
   verb: 'delete';
   id: RemindId;
+  force: boolean;
 }
 
 export interface Help {
@@ -78,8 +79,9 @@ const parseRemind = async (cmd: string, orig: ZulipOrig, getTimezone: GetTimezon
 
 const parseDelete = (cmd: string): Delete => {
   const id = parseInt(cmd.split(' ')[1]);
+  const force = cmd.split(' ')[2] == 'force';
   if (!id || id < 1) throw `Invalid delete id $id.`;
-  return { verb: 'delete', id };
+  return { verb: 'delete', id, force };
 };
 
 export const printRemind = (remind: Remind) =>

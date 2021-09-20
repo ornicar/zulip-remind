@@ -1,6 +1,6 @@
 import * as zulipInit from 'zulip-js';
 import { Zulip, ZulipMsg, messageLoop, reply, send, react, botName, userTimezone, printDest } from './zulip';
-import { Remind, parseCommand, printRemind, RemindId } from './command';
+import { Remind, parseCommand, printRemind, RemindId, Delete } from './command';
 import { RedisStore, Store } from './store';
 import { markdownTable, printDate } from './util';
 
@@ -20,7 +20,7 @@ import { markdownTable, printDate } from './util';
           await addReminder(msg, command);
           break;
         case 'delete':
-          await deleteReminder(msg, command.id);
+          await deleteReminder(msg, command);
           break;
         case 'help':
           await help(msg);
@@ -66,8 +66,8 @@ import { markdownTable, printDate } from './util';
     }
   };
 
-  const deleteReminder = async (msg: ZulipMsg, id: RemindId) => {
-    const entry = await store.delete(id, msg.sender_id);
+  const deleteReminder = async (msg: ZulipMsg, command: Delete) => {
+    const entry = await store.delete(command.id, !command.force && msg.sender_id);
     if (entry) await reply(z, msg, `:check_mark: Deleted: ${printRemind(entry)}`);
     else await react(z, msg, 'cross_mark');
   };
@@ -89,6 +89,7 @@ import { markdownTable, printDate } from './util';
         'Use `' + mention + ' list` to see the list of all your reminders.',
         '',
         'Use `' + mention + ' delete id` to delete a reminder by its ID',
+        'Use `' + mention + ' delete id force` to delete a reminder that you did not create',
       ].join('\n')
     );
   };

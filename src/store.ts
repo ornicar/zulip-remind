@@ -48,11 +48,11 @@ export class RedisStore implements Store {
     }
   };
 
-  delete = async (id: RemindId, by: UserId) => {
+  delete = async (id: RemindId, by: UserId | false) => {
     const entries = await this.client.zrange(this.setKey, 0, -1);
     const entry = entries.find(e => {
       const remind = this.read(e);
-      return remind.id == id && remind.from == by;
+      return remind.id == id && (!by || remind.from == by);
     });
     if (entry) await this.client.zrem(this.setKey, entry);
     return entry && this.read(entry);
