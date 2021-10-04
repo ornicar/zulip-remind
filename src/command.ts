@@ -31,7 +31,8 @@ export interface Help {
 type Command = Remind | List | Delete | Help;
 
 export const parseCommand = async (cmd: string, orig: ZulipOrig, getTimezone: GetTimezone): Promise<Command> => {
-  const verb = cmd.trim().split(' ')[0];
+  cmd = cmd.trim();
+  const verb = cmd.split(' ')[0];
   if (verb == 'list') return { verb };
   if (verb == 'help' || verb == 'halp' || verb == 'h') return { verb: 'help' };
   if (verb == 'delete' || verb == 'del' || verb == 'remove') return parseDelete(cmd);
