@@ -112,6 +112,16 @@ const origToDest = (orig: ZulipOrig): ZulipDest => {
       };
 };
 
+export const getDestFromMsgId = async (zulip: Zulip, msg_id: number): Promise<ZulipDest | undefined> => {
+  const msgs = await zulip.messages.retrieve({
+    anchor: msg_id,
+    num_before: 0,
+    num_after: 0,
+    apply_markdown: false,
+  });
+  if (msgs.found_anchor && msgs.messages.length === 1) return origToDest(msgs[0]);
+};
+
 export const send = async (zulip: Zulip, dest: ZulipDest, text: string) => {
   await zulip.messages.send({
     ...dest,

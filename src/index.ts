@@ -1,6 +1,17 @@
 import * as zulipInit from 'zulip-js';
-import { Zulip, ZulipMsg, messageLoop, reply, send, react, botName, userTimezone, printDest } from './zulip';
-import { Remind, parseCommand, printRemind, RemindId, Delete } from './command';
+import {
+  Zulip,
+  ZulipMsg,
+  messageLoop,
+  reply,
+  send,
+  react,
+  getDestFromMsgId,
+  botName,
+  userTimezone,
+  printDest,
+} from './zulip';
+import { Remind, parseCommand, printRemind, Delete } from './command';
 import { RedisStore, Store } from './store';
 import { markdownTable, printDate } from './util';
 
@@ -96,7 +107,8 @@ import { markdownTable, printDate } from './util';
 
   const remindNow = async (add: Remind) => {
     console.log('Reminding now', add);
-    await send(z, add.dest, `Reminder: ${add.what}`);
+    const dest = add.dest.type == 'stream' ? (await getDestFromMsgId(z, add.orig_msg_id)) ?? add.dest : add.dest;
+    await send(z, dest, `Reminder: ${add.what}`);
   };
 
   setInterval(async () => {

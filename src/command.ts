@@ -1,5 +1,5 @@
 import * as chrono from 'chrono-node';
-import { GetTimezone, printDest, UserId, ZulipDest, ZulipOrig } from './zulip';
+import { GetTimezone, printDest, UserId, ZulipDest, ZulipMsg } from './zulip';
 import { findTimeZone, getUTCOffset } from 'timezone-support';
 import { printDate } from './util';
 
@@ -9,6 +9,7 @@ export interface Remind {
   verb: 'remind';
   what: string;
   dest: ZulipDest;
+  orig_msg_id: number;
   when: Date;
   from: UserId;
   id?: RemindId; // auto-increment, set by the store
@@ -30,7 +31,7 @@ export interface Help {
 
 type Command = Remind | List | Delete | Help;
 
-export const parseCommand = async (cmd: string, orig: ZulipOrig, getTimezone: GetTimezone): Promise<Command> => {
+export const parseCommand = async (cmd: string, orig: ZulipMsg, getTimezone: GetTimezone): Promise<Command> => {
   cmd = cmd.trim();
   const verb = cmd.split(' ')[0];
   if (verb == 'list') return { verb };
@@ -39,7 +40,7 @@ export const parseCommand = async (cmd: string, orig: ZulipOrig, getTimezone: Ge
   else return await parseRemind(cmd, orig, getTimezone);
 };
 
-const parseRemind = async (cmd: string, orig: ZulipOrig, getTimezone: GetTimezone): Promise<Remind> => {
+const parseRemind = async (cmd: string, orig: ZulipMsg, getTimezone: GetTimezone): Promise<Remind> => {
   const timezone = await getTimezone(orig.sender_id);
   const chronoedAll = chrono.parse(
     cmd,
@@ -74,6 +75,7 @@ const parseRemind = async (cmd: string, orig: ZulipOrig, getTimezone: GetTimezon
           },
     what,
     when,
+    orig_msg_id: orig.id,
     from: orig.sender_id,
   };
 };
