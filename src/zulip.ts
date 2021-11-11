@@ -113,13 +113,17 @@ const origToDest = (orig: ZulipOrig): ZulipDest => {
 };
 
 export const getDestFromMsgId = async (zulip: Zulip, msg_id: number): Promise<ZulipDest | undefined> => {
-  const msgs = await zulip.messages.retrieve({
-    anchor: msg_id,
-    num_before: 0,
-    num_after: 0,
-    apply_markdown: false,
-  });
-  if (msgs.found_anchor && msgs.messages.length > 0) return origToDest(msgs.messages[0]);
+  try {
+    const msgs = await zulip.messages.retrieve({
+      anchor: msg_id,
+      num_before: 0,
+      num_after: 0,
+      apply_markdown: false,
+    });
+    if (msgs.found_anchor && msgs.messages.length > 0) return origToDest(msgs.messages[0]);
+  } catch (e) {
+    console.error(e);
+  }
 };
 
 export const send = async (zulip: Zulip, dest: ZulipDest, text: string) => {
