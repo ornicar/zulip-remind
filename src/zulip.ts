@@ -96,7 +96,7 @@ export const botName = async (zulip: Zulip): Promise<string> => {
 
 export const userTimezone = (zulip: Zulip) => async (userId: UserId): Promise<string> => {
   const res = await zulip.callEndpoint(`/users/${userId}`, 'GET', {});
-  return res.user.timezone;
+  return res.user.timezone || 'UTC';
 };
 
 const origToDest = (orig: ZulipOrig): ZulipDest => {
