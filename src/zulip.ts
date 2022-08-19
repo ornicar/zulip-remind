@@ -42,17 +42,16 @@ export const messageLoop = async (zulip: ZulipClient, handler: (msg: Msg, cmd: s
   console.log(`Connected to zulip as @${me.full_name}, awaiting commands`);
   await send(zulip, { type: 'stream', to: 'zulip', topic: 'bots log' }, 'I started.');
   while (true) {
-    try {
-      const timeout = setTimeout(() => {
-        console.log('events.retrieve timed out. Exiting...');
-        process.exit();
-      }, (q.event_queue_longpoll_timeout_seconds ?? 90) * 1_000);
+    const timeout = setTimeout(() => {
+      console.log('events.retrieve timed out. Exiting...');
+      process.exit();
+    }, (q.event_queue_longpoll_timeout_seconds ?? 90) * 1_000);
 
+    try {
       const res = await zulip.events.retrieve({
         queue_id: q.queue_id,
         last_event_id: lastEventId,
       });
-
       clearTimeout(timeout);
 
       if (res.result !== 'success') {
@@ -84,6 +83,7 @@ export const messageLoop = async (zulip: ZulipClient, handler: (msg: Msg, cmd: s
       });
     } catch (e) {
       console.error(e);
+      clearTimeout(timeout);
       await sleep(2000);
     }
   }
