@@ -43,16 +43,25 @@ export const messageLoop = async (zulip: ZulipClient, handler: (msg: Msg, cmd: s
   await send(zulip, { type: 'stream', to: 'zulip', topic: 'bots log' }, 'I started.');
   while (true) {
     try {
+      const timeout = setTimeout(() => {
+        console.log('events.retrieve timed out. Exiting...');
+        process.exit();
+      }, (q.event_queue_longpoll_timeout_seconds ?? 90) * 1_000);
+
       const res = await zulip.events.retrieve({
         queue_id: q.queue_id,
         last_event_id: lastEventId,
       });
+
+      clearTimeout(timeout);
+
       if (res.result !== 'success') {
         console.error(`Got error response on events.retrieve: ${JSON.stringify(res)}`);
         if (res.code === 'BAD_EVENT_QUEUE_ID') return;
         await sleep(2000);
         continue;
       }
+
       res.events.forEach(async event => {
         lastEventId = event.id;
         switch (event.type) {
