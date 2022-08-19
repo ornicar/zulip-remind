@@ -2,7 +2,7 @@ import zulipInit, { type Msg } from 'zulip-js';
 import { messageLoop, reply, send, react, getDestFromMsgId, botName, userTimezone, printDest } from './zulip';
 import { Remind, parseCommand, printRemind, Delete } from './command';
 import { RedisStore, Store } from './store';
-import { markdownTable, printDate } from './util';
+import { markdownTable, printDate, sleep } from './util';
 
 (async () => {
   const z = await zulipInit({ zuliprc: 'zuliprc' });
@@ -105,5 +105,8 @@ import { markdownTable, printDate } from './util';
     if (add) await remindNow(add);
   }, 1000);
 
-  await messageLoop(z, messageHandler);
+  while (true) {
+    await messageLoop(z, messageHandler);
+    await sleep(10_000);
+  }
 })();

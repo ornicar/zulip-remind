@@ -112,7 +112,7 @@ declare module 'zulip-js' {
       register(params: {
         event_types: string[];
         narrow?: Narrow[];
-      }): ApiResponse<{ last_event_id: number; queue_id: string }>;
+      }): ApiResponse<{ last_event_id: number; queue_id: string; event_queue_longpoll_timeout_seconds?: number }>;
     };
     events: {
       retrieve(params: {
