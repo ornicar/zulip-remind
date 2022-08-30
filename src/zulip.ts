@@ -1,13 +1,7 @@
-import { promisify } from 'util';
+/// <reference path="zulip-js.d.ts"/>
 
-export interface Zulip {
-  queues: any;
-  events: any;
-  users: any;
-  messages: any;
-  reactions: any;
-  callEndpoint: (path: string, method: 'GET' | 'POST', params: any) => Promise<any>;
-}
+import type { ApiResponse, Msg, ZulipClient } from 'zulip-js';
+import { sleep } from './util';
 
 export type UserId = number;
 
@@ -26,19 +20,6 @@ export interface ZulipOrigPrivate {
 
 export type ZulipOrig = ZulipOrigStream | ZulipOrigPrivate;
 
-export interface ZulipMsgStream extends ZulipOrigStream {
-  id: number;
-  content: string;
-  command: string;
-}
-export interface ZulipMsgPrivate extends ZulipOrigPrivate {
-  id: number;
-  content: string;
-  command: string;
-}
-
-export type ZulipMsg = ZulipMsgStream | ZulipMsgPrivate;
-
 export interface ZulipDestStream {
   type: 'stream';
   to: number | string;
@@ -54,50 +35,77 @@ export type ZulipDest = ZulipDestStream | ZulipDestPrivate;
 
 export type GetTimezone = (userId: UserId) => Promise<string>;
 
-export const messageLoop = async (zulip: Zulip, handler: (msg: ZulipMsg) => Promise<void>) => {
-  const q = await zulip.queues.register({ event_types: ['message'] });
-  const me = await zulip.users.me.getProfile();
+export const messageLoop = async (zulip: ZulipClient, handler: (msg: Msg, cmd: string) => Promise<void>) => {
+  const q = await assertSuccess(zulip.queues.register({ event_types: ['message'] }));
+  const me = await assertSuccess(zulip.users.me.getProfile());
   let lastEventId = q.last_event_id;
   console.log(`Connected to zulip as @${me.full_name}, awaiting commands`);
   await send(zulip, { type: 'stream', to: 'zulip', topic: 'bots log' }, 'I started.');
   while (true) {
+    const timeout = setTimeout(() => {
+      console.log('events.retrieve timed out. Exiting...');
+      process.exit();
+    }, (q.event_queue_longpoll_timeout_seconds ?? 90) * 1_000);
+
     try {
       const res = await zulip.events.retrieve({
         queue_id: q.queue_id,
         last_event_id: lastEventId,
       });
-      res.events.forEach(async (event: any) => {
+      clearTimeout(timeout);
+
+      if (res.result !== 'success') {
+        console.error(`Got error response on events.retrieve: ${JSON.stringify(res)}`);
+        if (res.code === 'BAD_EVENT_QUEUE_ID') return;
+        await sleep(2000);
+        continue;
+      }
+
+      res.events.forEach(async event => {
         lastEventId = event.id;
-        if (event.type == 'heartbeat') {
-          //console.log('Zulip heartbeat');
-        } else if (event.message) {
-          // ignore own messages
-          if (event.message.sender_id != me.user_id) {
-            const parts = event.message.content.trim().split(' ');
-            // require explicit ping
-            if (parts[0] == `@**${me.full_name}**`) {
-              event.message.command = parts.slice(1).join(' ');
-              await handler(event.message as ZulipMsg);
+        switch (event.type) {
+          case 'heartbeat':
+            //console.log('Zulip heartbeat');
+            break;
+          case 'message':
+            // ignore own messages
+            if (event.message.sender_id != me.user_id) {
+              const parts = event.message.content.trim().split(' ');
+              // require explicit ping
+              if (parts[0] == `@**${me.full_name}**`) {
+                await handler(event.message, parts.slice(1).join(' '));
+              }
             }
-          }
-        } else console.log(event);
+            break;
+          default:
+            console.log(event);
+        }
       });
     } catch (e) {
       console.error(e);
-      await promisify(setTimeout)(2000);
+      clearTimeout(timeout);
+      await sleep(2000);
     }
   }
 };
 
-export const botName = async (zulip: Zulip): Promise<string> => {
-  const me = await zulip.users.me.getProfile();
+const assertSuccess = async <T>(response: ApiResponse<T>): Promise<T> => {
+  const resp = await response;
+  if (resp.result !== 'success') throw new Error(`Got error response: ${JSON.stringify(resp)}`);
+  return resp;
+};
+
+export const botName = async (zulip: ZulipClient): Promise<string> => {
+  const me = await assertSuccess(zulip.users.me.getProfile());
   return me.full_name;
 };
 
-export const userTimezone = (zulip: Zulip) => async (userId: UserId): Promise<string> => {
-  const res = await zulip.callEndpoint(`/users/${userId}`, 'GET', {});
-  return res.user.timezone || 'UTC';
-};
+export const userTimezone =
+  (zulip: ZulipClient) =>
+  async (userId: UserId): Promise<string> => {
+    const res: any = await zulip.callEndpoint(`/users/${userId}`, 'GET', {});
+    return res.user.timezone || 'UTC';
+  };
 
 const origToDest = (orig: ZulipOrig): ZulipDest => {
   return orig.type == 'stream'
@@ -112,7 +120,7 @@ const origToDest = (orig: ZulipOrig): ZulipDest => {
       };
 };
 
-export const getDestFromMsgId = async (zulip: Zulip, msg_id: number): Promise<ZulipDest | undefined> => {
+export const getDestFromMsgId = async (zulip: ZulipClient, msg_id: number): Promise<ZulipDest | undefined> => {
   try {
     const msgs = await zulip.messages.retrieve({
       anchor: msg_id,
@@ -120,22 +128,22 @@ export const getDestFromMsgId = async (zulip: Zulip, msg_id: number): Promise<Zu
       num_after: 0,
       apply_markdown: false,
     });
-    if (msgs.found_anchor && msgs.messages.length > 0) return origToDest(msgs.messages[0]);
+    if (msgs.result === 'success' && msgs.found_anchor && msgs.messages.length > 0) return origToDest(msgs.messages[0]);
   } catch (e) {
     console.error(e);
   }
 };
 
-export const send = async (zulip: Zulip, dest: ZulipDest, text: string) => {
+export const send = async (zulip: ZulipClient, dest: ZulipDest, text: string) => {
   await zulip.messages.send({
     ...dest,
     content: text,
   });
 };
 
-export const reply = async (zulip: Zulip, to: ZulipMsg, text: string) => await send(zulip, origToDest(to), text);
+export const reply = async (zulip: ZulipClient, to: Msg, text: string) => await send(zulip, origToDest(to), text);
 
-export const react = async (zulip: Zulip, to: ZulipMsg, emoji: string) =>
+export const react = async (zulip: ZulipClient, to: Msg, emoji: string) =>
   await zulip.reactions.add({
     message_id: to.id,
     emoji_name: emoji,

@@ -1,3 +1,5 @@
+import { promisify } from 'util';
+
 const markdownTableRow = (row: string[]) => `| ${row.join(' | ')} |`;
 
 export const markdownTable = (rows: string[][]) =>
@@ -6,3 +8,5 @@ export const markdownTable = (rows: string[][]) =>
   );
 
 export const printDate = (date: Date): string => `<time:${date.toISOString()}>`;
+
+export const sleep = promisify(setTimeout);

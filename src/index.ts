@@ -1,28 +1,17 @@
-import * as zulipInit from 'zulip-js';
-import {
-  Zulip,
-  ZulipMsg,
-  messageLoop,
-  reply,
-  send,
-  react,
-  getDestFromMsgId,
-  botName,
-  userTimezone,
-  printDest,
-} from './zulip';
+import zulipInit, { type Msg } from 'zulip-js';
+import { messageLoop, reply, send, react, getDestFromMsgId, botName, userTimezone, printDest } from './zulip';
 import { Remind, parseCommand, printRemind, Delete } from './command';
 import { RedisStore, Store } from './store';
-import { markdownTable, printDate } from './util';
+import { markdownTable, printDate, sleep } from './util';
 
 (async () => {
-  const z: Zulip = await zulipInit.default({ zuliprc: 'zuliprc' });
+  const z = await zulipInit({ zuliprc: 'zuliprc' });
   const store: Store = new RedisStore();
 
-  const messageHandler = async (msg: ZulipMsg) => {
-    console.log(`Command: ${msg.command}`);
+  const messageHandler = async (msg: Msg, cmd: string) => {
+    console.log(`Command: ${cmd}`);
     try {
-      const command = await parseCommand(msg.command, msg, userTimezone(z));
+      const command = await parseCommand(cmd, msg, userTimezone(z));
       switch (command.verb) {
         case 'list':
           await listReminders(msg);
@@ -44,13 +33,13 @@ import { markdownTable, printDate } from './util';
     }
   };
 
-  const addReminder = async (msg: ZulipMsg, remind: Remind) => {
+  const addReminder = async (msg: Msg, remind: Remind) => {
     remind.id = await store.add(remind);
     console.log(printRemind(remind));
     await reply(z, msg, `:check_mark: ${printRemind(remind)}`);
   };
 
-  const listReminders = async (msg: ZulipMsg) => {
+  const listReminders = async (msg: Msg) => {
     const all = await store.list();
 
     const printTable = (title: string, rs: Remind[]) =>
@@ -77,13 +66,13 @@ import { markdownTable, printDate } from './util';
     }
   };
 
-  const deleteReminder = async (msg: ZulipMsg, command: Delete) => {
+  const deleteReminder = async (msg: Msg, command: Delete) => {
     const entry = await store.delete(command.id, !command.force && msg.sender_id);
     if (entry) await reply(z, msg, `:check_mark: Deleted: ${printRemind(entry)}`);
     else await react(z, msg, 'cross_mark');
   };
 
-  const help = async (msg: ZulipMsg) => {
+  const help = async (msg: Msg) => {
     const name = await botName(z);
     const mention = `@${name}`;
     await reply(
@@ -116,5 +105,8 @@ import { markdownTable, printDate } from './util';
     if (add) await remindNow(add);
   }, 1000);
 
-  await messageLoop(z, messageHandler);
+  while (true) {
+    await messageLoop(z, messageHandler);
+    await sleep(10_000);
+  }
 })();
