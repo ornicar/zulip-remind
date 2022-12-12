@@ -1,7 +1,8 @@
 import * as chrono from 'chrono-node';
-import { GetTimezone, printDest, UserId, ZulipDest, ZulipMsg } from './zulip';
+import { GetTimezone, printDest, UserId, ZulipDest } from './zulip';
 import { findTimeZone, getUTCOffset } from 'timezone-support';
 import { printDate } from './util';
+import { Msg } from 'zulip-js';
 
 export type RemindId = number;
 
@@ -31,7 +32,7 @@ export interface Help {
 
 type Command = Remind | List | Delete | Help;
 
-export const parseCommand = async (cmd: string, orig: ZulipMsg, getTimezone: GetTimezone): Promise<Command> => {
+export const parseCommand = async (cmd: string, orig: Msg, getTimezone: GetTimezone): Promise<Command> => {
   cmd = cmd.trim();
   const verb = cmd.split(' ')[0];
   if (verb == 'list') return { verb };
@@ -40,7 +41,7 @@ export const parseCommand = async (cmd: string, orig: ZulipMsg, getTimezone: Get
   else return await parseRemind(cmd, orig, getTimezone);
 };
 
-const parseRemind = async (cmd: string, orig: ZulipMsg, getTimezone: GetTimezone): Promise<Remind> => {
+const parseRemind = async (cmd: string, orig: Msg, getTimezone: GetTimezone): Promise<Remind> => {
   const timezone = await getTimezone(orig.sender_id);
   const chronoedAll = chrono.parse(
     cmd,

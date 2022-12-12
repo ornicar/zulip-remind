@@ -1,4 +1,4 @@
-import zulipInit, { type Msg } from 'zulip-js';
+import zulipInit, { Msg } from 'zulip-js';
 import { messageLoop, reply, send, react, getDestFromMsgId, botName, userTimezone, printDest } from './zulip';
 import { Remind, parseCommand, printRemind, Delete } from './command';
 import { RedisStore, Store } from './store';
