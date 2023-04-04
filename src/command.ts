@@ -47,7 +47,7 @@ const parseRemind = async (cmd: string, orig: Msg, getTimezone: GetTimezone): Pr
     cmd,
     {
       instant: new Date(),
-      timezone: getUTCOffset(new Date(), findTimeZone(timezone)).abbreviation,
+      timezone: -getUTCOffset(new Date(), findTimeZone(timezone)).offset,
     },
     {
       forwardDate: true,
