@@ -1,35 +1,35 @@
-FROM debian:buster-slim
+# Use a Node.js base image
+FROM node:20-alpine as builder
 
-LABEL author="Fabian Hintringer" \
-    name="reminder-bot" \
-    version=1.0.0
+# Set the working directory in the container
+WORKDIR /app
 
-ARG REDIS_PORT \
-     REDIS_HOST \
-     REDIS_PASSWORD
+# Copy package management files
+COPY package.json yarn.lock ./
 
-ENV REDIS_HOST=$REDIS_HOST \
-    REDIS_PORT=$REDIS_PORT \
-    REDIS_PASSWORD=${REDIS_PASSWORD}
+# Install all dependencies (including devDependencies for building)
+RUN yarn install
 
-RUN mkdir -p /var/reminder-bot
+# Copy the rest of your application's source code
+COPY . .
 
-COPY ./ /var/reminder-bot/
+# Compile TypeScript to JavaScript
+RUN yarn build
 
-RUN cd /var/reminder-bot \
-    && apt-get update \
-    && apt-get upgrade -y \
-    && apt-get install curl unzip -y \
-    && curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | bash \
-    && export NVM_DIR="$HOME/.nvm" \
-    && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" \
-    && [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion" \
-    && nvm install 14.4.0 -y\
-    && apt-get update \
-    && apt-get install npm -y\
-    && npm install -g npm@7.20.0 \
-    && npm install --global yarn --no-optionals -y \  
-    && yarn install \
-    && chmod +x /var/reminder-bot/entrypoint.sh 
+# Start a new stage from scratch for a smaller final image
+FROM node:20-alpine
 
-ENTRYPOINT /var/reminder-bot/entrypoint.sh ${REDIS_HOST} ${REDIS_PORT} ${REDIS_PASSWORD}
+WORKDIR /app
+
+# Copy package management files
+COPY package.json yarn.lock ./
+
+# Install only production dependencies
+RUN yarn install --production
+
+# Copy built JavaScript files and any other necessary files from the builder stage
+COPY --from=builder /app/dist ./dist
+COPY . .
+
+# Your application's default command
+CMD ["yarn", "start"]
