@@ -1,22 +1,35 @@
-FROM alpine:latest
+# Use a Node.js base image
+FROM node:20-alpine as builder
 
-LABEL author="Fabian Hintringer" \
-      name="reminder-bot" \
-      version="1.0.0"
-
-# Install dependencies, Node.js, and Yarn
-RUN apk add --no-cache curl bash nodejs npm && npm install -g yarn
-
-# Set work directory and copy application code
+# Set the working directory in the container
 WORKDIR /app
-COPY . .
 
-# Install Node.js dependencies
+# Copy package management files
+COPY package.json yarn.lock ./
+
+# Install all dependencies (including devDependencies for building)
 RUN yarn install
 
-# If you have an entrypoint script, ensure it's executable
-# Uncomment the next line if your entrypoint script is used
-# RUN chmod +x ./entrypoint.sh
+# Copy the rest of your application's source code
+COPY . .
 
-# Start the application
-CMD ["yarn", "dev"]
+# Compile TypeScript to JavaScript
+RUN yarn build
+
+# Start a new stage from scratch for a smaller final image
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy package management files
+COPY package.json yarn.lock ./
+
+# Install only production dependencies
+RUN yarn install --production
+
+# Copy built JavaScript files and any other necessary files from the builder stage
+COPY --from=builder /app/dist ./dist
+COPY . .
+
+# Your application's default command
+CMD ["yarn", "start"]
